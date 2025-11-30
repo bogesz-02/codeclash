@@ -375,7 +375,8 @@ export const Game = () => {
 		let cancelled = false;
 		(async () => {
 			try {
-				const res = await fetch("http://localhost:3001/api/cards");
+				const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+				const res = await fetch(`${apiUrl}/api/cards`);
 				const json = await res.json();
 				if (json?.success && Array.isArray(json.cards) && !cancelled) {
 					setAllCards(json.cards);
