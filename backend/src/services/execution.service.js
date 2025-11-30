@@ -253,7 +253,7 @@ class ExecutionService {
 			const addEventHelper = (icon, message, details = null, actorId = null) => {
 				events.push({ icon, message, details, actorId });
 			};
-			addEventHelper("🐛", `${playerId.substring(0, 8)} has no executable code`, "All blocks are bugged");
+			addEventHelper("🐛", `🐛${playerId.substring(0, 8)} minden blokk hibás`, "All blocks are bugged");
 			return { success: true, code: "", logs, events, game, defenses: { hasHide: false, dodgesRemaining: 0 } };
 		}
 
