@@ -1,0 +1,53 @@
+# Docker Compose - Single Setup for Development & Presentations
+# Works for local dev with hot-reload and for presentations with built images
+
+version: "3.8"
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3307:3306"
+    # Note: credentials are provided via env_file (backend/.env).
+    # Avoid using ${VAR} substitution here because that reads from the
+    # environment or a project-level .env, which may not exist.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "3001:3001"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      # Expose repository-level assets into the container root so Vite's
+      # `publicDir` (which resolves to ../assets) can find them inside Docker.
+      - ./assets:/assets:ro
+    depends_on:
+      - backend
+    environment:
+      - VITE_BACKEND_URL=http://localhost:3001
+
+volumes:
+  db-data:
