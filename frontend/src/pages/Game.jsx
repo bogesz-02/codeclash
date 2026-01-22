@@ -92,6 +92,25 @@ export const Game = () => {
 		navigate("/");
 	};
 
+	// Test state handlers
+	const handleTestState1 = () => {
+		if (!socket) return;
+		socket.emit("game:test:setState", { gameId: lobbyId, testState: "test1" }, (response) => {
+			if (!response?.success) {
+				console.error("[handleTestState1] Failed:", response?.error);
+			}
+		});
+	};
+
+	const handleTestState2 = () => {
+		if (!socket) return;
+		socket.emit("game:test:setState", { gameId: lobbyId, testState: "test2" }, (response) => {
+			if (!response?.success) {
+				console.error("[handleTestState2] Failed:", response?.error);
+			}
+		});
+	};
+
 	// Silent leave (used for browser back/popstate) - emits and clears state but doesn't navigate
 	const leaveSilent = () => {
 		if (leftRef.current) return;
@@ -329,11 +348,37 @@ export const Game = () => {
 			}, 5000);
 		};
 
+		const handleTestStateSet = (data) => {
+			console.log("Test state set:", data);
+			if (data.game) {
+				setGamePlayers(data.game.players);
+				setRound(data.game.round || 1);
+
+				const myPlayer = data.game.players.find((p) => p.id === socket.id);
+				if (myPlayer) {
+					setHand(myPlayer.hand || []);
+					setTurnPhase(myPlayer.turnPhase || "choose");
+					setHasDrawn(myPlayer.hasDrawn || false);
+					setPlayerReady(myPlayer.ready || false);
+					setCodeBlocks([]);
+				}
+
+				const oppPlayer = data.game.players.find((p) => p.id !== socket.id);
+				if (oppPlayer) {
+					setOpponentReady(oppPlayer.ready || false);
+					setOpponentCodeBlocks([]);
+				}
+
+				setEvents([]);
+			}
+		};
+
 		socket.on("game:started", handleGameStarted);
 		socket.on("game:updated", handleGameUpdated);
 		socket.on("game:round:resolved", handleRoundResolved);
 		socket.on("game:player-disconnected", handlePlayerDisconnected);
 		socket.on("game:over", handleGameOver);
+		socket.on("game:test:stateSet", handleTestStateSet);
 
 		// Fetch current state in case we navigated after 'game:started' was emitted
 		try {
@@ -364,6 +409,7 @@ export const Game = () => {
 			socket.off("game:round:resolved", handleRoundResolved);
 			socket.off("game:player-disconnected", handlePlayerDisconnected);
 			socket.off("game:over", handleGameOver);
+			socket.off("game:test:stateSet", handleTestStateSet);
 			if (returnTimerRef.current) {
 				clearTimeout(returnTimerRef.current);
 			}
@@ -482,7 +528,7 @@ export const Game = () => {
 								...card,
 								params: { ...card.params }, // Preserve original params from database
 								displayText: card.displayText || `${card.params?.count || 1}x ismétlés`,
-						  }
+							}
 						: card;
 
 				const newBlock = {
@@ -497,8 +543,8 @@ export const Game = () => {
 						? {
 								...parentBlock,
 								children: [...(Array.isArray(parentBlock.children) ? parentBlock.children : []), newBlock],
-						  }
-						: b
+							}
+						: b,
 				);
 				setCodeBlocks(updated);
 			} else {
@@ -518,7 +564,7 @@ export const Game = () => {
 								...card,
 								params: { ...card.params }, // Preserve original params from database
 								displayText: card.displayText || `${card.params?.count || 1}x ismétlés`,
-						  }
+							}
 						: card;
 
 				const newBlock = {
@@ -1044,6 +1090,9 @@ export const Game = () => {
 			onChooseBuild={handleChooseBuild}
 			onDiscard={handleDiscard}
 			onPlayPowerup={handlePlayPowerup}
+			// Test state handlers
+			onTestState1={handleTestState1}
+			onTestState2={handleTestState2}
 		/>
 	);
 };

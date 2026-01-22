@@ -15,7 +15,7 @@ import { ActionPanel } from "./ActionPanel";
 // gameOver: boolean to show game over modal
 // gameResult: { winner, loser } game over result
 // myId: current player's socket id
-export const GameField = ({ player = {}, opponent = {}, onLeave, opponentLeft = false, gameOver = false, gameResult = null, myId = null, confirmOpen = false, onOpenConfirm, onConfirmLeave, onCancelLeave, hand = [], codeBlocks = [], opponentCodeBlocks = [], playerReady = false, opponentReady = false, turnPhase = "choose", hasDrawn = false, round = 1, onDropCard, onReorder, onRemoveBlock, onRemoveNested, onReady, onDrawCard, onChooseBuild, onDiscard, onPlayPowerup, events = [] }) => {
+export const GameField = ({ player = {}, opponent = {}, onLeave, opponentLeft = false, gameOver = false, gameResult = null, myId = null, confirmOpen = false, onOpenConfirm, onConfirmLeave, onCancelLeave, hand = [], codeBlocks = [], opponentCodeBlocks = [], playerReady = false, opponentReady = false, turnPhase = "choose", hasDrawn = false, round = 1, onDropCard, onReorder, onRemoveBlock, onRemoveNested, onReady, onDrawCard, onChooseBuild, onDiscard, onPlayPowerup, events = [], onTestState1, onTestState2 }) => {
 	// Detect empty container blocks (for_loop / if) recursively
 	const hasEmptyContainers = (() => {
 		const isContainer = (b) => b && b.card && ["for_loop", "if"].includes(b.card.key || b.card.card_key);
@@ -91,6 +91,17 @@ export const GameField = ({ player = {}, opponent = {}, onLeave, opponentLeft = 
 							</div>
 						</div>
 					</div>
+					{/* Test State Buttons - Bottom of screen */}
+					{onTestState1 && onTestState2 && (
+						<div className="col-span-12 flex justify-center gap-4 mt-2">
+							<button onClick={onTestState1} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow text-sm" title="Test 1: Both max HP/Energy. P1: count_3, attack, energy. P2: dodge, draw_from_opponent, count_2">
+								Test State 1
+							</button>
+							<button onClick={onTestState2} className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium shadow text-sm" title="Test 2: P1 2HP/max energy with heal, cond_health_below_3, debug. P2 max HP/energy with count_3, attack, bug">
+								Test State 2
+							</button>
+						</div>
+					)}
 				</div>
 
 				{/* Opponent left warning banner */}

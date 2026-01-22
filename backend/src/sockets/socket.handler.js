@@ -169,6 +169,8 @@ export function setupSocketHandlers(io) {
 							game: execResult.game,
 						});
 						gameService.games.delete(gameId);
+						// Delete the lobby when game is over
+						lobbyService.lobbies.delete(gameId);
 					} else {
 						const clearResult = gameService.clearTurnState(gameId);
 						console.log(`[game:draw] Turn state cleared after auto-ready. Game still exists:`, !!gameService.getGame(gameId), "New round:", clearResult.game?.round);
@@ -318,6 +320,8 @@ export function setupSocketHandlers(io) {
 							game: result.game,
 						});
 						gameService.games.delete(gameId);
+						// Delete the lobby when game is over
+						lobbyService.lobbies.delete(gameId);
 						callback?.({ success: true, gameOver: true });
 					} else {
 						const clearResult = gameService.clearTurnState(gameId);
@@ -433,6 +437,86 @@ export function setupSocketHandlers(io) {
 					}
 				}
 			});
+		});
+
+		// TEST STATE HANDLER - for debugging and testing
+		socket.on("game:test:setState", async (data, callback) => {
+			const { gameId, testState } = data;
+			const game = gameService.getGame(gameId);
+
+			if (!game) {
+				callback?.({ success: false, error: "Game not found" });
+				return;
+			}
+
+			try {
+				let deck = await deckService.buildDeck();
+
+				// Helper to find card by key
+				const findCard = (key) => {
+					const card = deck.find((c) => c.key === key || c.variationKey === key);
+					if (!card) {
+						console.error(`Card not found: ${key}`);
+					}
+					return card;
+				};
+
+				if (testState === "test1") {
+					// Test 1: player1 max health/energy with count_3, attack, energy
+					// player2 max health/energy with dodge, draw_from_opponent, count_2
+					game.players.forEach((player, idx) => {
+						player.hp = 10;
+						player.energy = 3;
+						player.hand = [];
+						player.program = null;
+						player.programPreview = null;
+						player.ready = false;
+						player.turnPhase = "choose";
+						player.hasDrawn = false;
+
+						if (idx === 0) {
+							// Player 1 hand
+							const cards = [findCard("count_3"), findCard("attack"), findCard("energy")];
+							player.hand = cards.filter((c) => c);
+						} else {
+							// Player 2 hand
+							const cards = [findCard("dodge"), findCard("draw_from_opponent"), findCard("count_2")];
+							player.hand = cards.filter((c) => c);
+						}
+					});
+				} else if (testState === "test2") {
+					// Test 2: player1 2 health, max energy with healing, cond_health_below_3, debug
+					// player2 max health/energy with count_3, attack, bug
+					game.players.forEach((player, idx) => {
+						player.hp = idx === 0 ? 2 : 10;
+						player.energy = 3;
+						player.hand = [];
+						player.program = null;
+						player.programPreview = null;
+						player.ready = false;
+						player.turnPhase = "choose";
+						player.hasDrawn = false;
+
+						if (idx === 0) {
+							// Player 1 hand
+							const cards = [findCard("healing"), findCard("cond_health_below_3"), findCard("debug")];
+							player.hand = cards.filter((c) => c);
+						} else {
+							// Player 2 hand
+							const cards = [findCard("count_3"), findCard("attack"), findCard("bug")];
+							player.hand = cards.filter((c) => c);
+						}
+					});
+				}
+
+				game.round = 1;
+
+				callback?.({ success: true, game });
+				io.to(gameId).emit("game:test:stateSet", { game });
+			} catch (err) {
+				console.error("[game:test:setState] Error:", err);
+				callback?.({ success: false, error: err.message });
+			}
 		});
 	});
 }
